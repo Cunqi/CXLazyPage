@@ -6,6 +6,36 @@ CXLazyPage is a SwiftUI package that provides a lazy loading mechanism for views
 
 The machenism relies on `UICollectionView`, which is a powerful and flexible way to manage collections of views in iOS. CXLazyPage leverages this to create a lazy loading experience for SwiftUI views.
 
+## Installation
+
+SPM is the recommended way to install CXLazyPage. Add the following line to your `Package.swift` file:
+
+```swift
+https://github.com/Cunqi/CXLazyPage.git
+```
+
+## Usage
+
+```swift
+import CXLazyPage
+
+struct CXLazyPageDemoView: View {
+    @State private var currentPage = 0
+
+    var body: some View {
+        CXLazyPage(axis: .horizontal, currentPage: $currentPage) { index in
+            Text("Page \(index + 1)")
+                .font(.largeTitle)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.blue.opacity(0.2))
+                .cornerRadius(12)
+                .padding()
+        }
+    }
+}
+
+```
+
 ## Core Components
 
 ### CXLazyPage
