@@ -97,7 +97,8 @@ public class CXLazyPageViewController<PageContent: View>: UIViewController, UICo
         /// avoid calling `collectionView.sizeForItemAt` since it will pre-calculate the size of each item
         /// and we have `10_0000000` items, which will cause performance issues.
         if let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout {
-            layout.itemSize = collectionView.bounds.size
+            let itemHeight = context.itemHeight ?? collectionView.bounds.size.height
+            layout.itemSize = CGSize(width: collectionView.bounds.size.width, height: itemHeight)
         }
 
         /// Ensure the collection view is scrolled to the anchor page index before displaying.
@@ -216,7 +217,7 @@ extension SwiftUI.Axis {
         case .horizontal:
             return .centeredHorizontally
         case .vertical:
-            return .centeredVertically
+            return .top
         }
     }
 }

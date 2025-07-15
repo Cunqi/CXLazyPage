@@ -20,11 +20,14 @@ public struct CXLazyPage<PageContent: View>: UIViewControllerRepresentable {
     // MARK: - Initializer
 
     public init(axis: Axis = .horizontal,
+                isPagingEnabled: Bool = true,
+                itemHeight: CGFloat? = nil,
                 currentPage: Binding<Int> = .constant(0),
                 @ViewBuilder pageContent: @escaping (Int) -> PageContent) {
         self.context = CXLazyPageContext.Builder()
             .axis(axis)
-            .pagingEnabled(true)
+            .pagingEnabled(isPagingEnabled)
+            .itemHeight(itemHeight)
             .build()
         self.pageContent = pageContent
         self._currentPage = currentPage
