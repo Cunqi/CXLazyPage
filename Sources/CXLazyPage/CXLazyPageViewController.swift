@@ -8,53 +8,13 @@
 import SwiftUI
 import UIKit
 
-public class CXLazyPageViewController<PageContent: View>: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
+// MARK: - CXLazyPageViewController
 
-    // MARK: - Constants
+public class CXLazyPageViewController<PageContent: View>: UIViewController, UICollectionViewDataSource,
+    UICollectionViewDelegateFlowLayout
+{
 
-    /// The maximum number of pages that can be displayed.
-    /// this is used to make the collection view fake infinite
-    private static var maxPageCount: Int { 100_000_000 }
-
-    private static var reuseIdentifier: String { "LazyPageViewControllerReuseIdentifier" }
-
-    // MARK: - Properties
-
-    /// The anchor page index used to make the starting point of the collection view.
-    private var pageAnchor = maxPageCount / 2
-
-    private let context: CXLazyPageContext
-
-    /// The content to be displayed on each page.
-    private var pageContent: (Int) -> PageContent
-
-    /// the page index of the currently visible page. this is the single source of
-    /// truth for the current page index
-    private var currentPageIndex: Int = 0
-
-    /// A closure that is called when the current page index is updated.
-    private var onPageIndexUpdate: (Int) -> Void
-
-    /// A flag to indicate if the collection view is currently fast scrolling. this usually happens
-    /// when the `pageIndex` is changed significantly, this will prevent `pageContent` from being updated
-    /// until the scrolling is finished.
-    private var isFastScrolling = false
-
-    private lazy var collectionView: UICollectionView = {
-        let layout = UICollectionViewFlowLayout()
-        layout.scrollDirection = context.axis.scrollDirection
-        layout.minimumLineSpacing = 0
-        layout.minimumInteritemSpacing = 0
-
-        let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
-        collectionView.dataSource = self
-        collectionView.delegate = self
-        collectionView.isPagingEnabled = context.isPagingEnabled
-        collectionView.showsHorizontalScrollIndicator = false
-        collectionView.showsVerticalScrollIndicator = false
-        collectionView.register(UICollectionViewCell.self, forCellWithReuseIdentifier: CXLazyPageViewController.reuseIdentifier)
-        return collectionView
-    }()
+    // MARK: Lifecycle
 
     // MARK: - Initializer
 
@@ -63,10 +23,11 @@ public class CXLazyPageViewController<PageContent: View>: UIViewController, UICo
     ///   - context: The context that defines the configuration of the lazy page.
     ///   - pageContent: A closure that provides the content for each page based on its index.
     ///   - onPageIndexUpdate: A closure that is called when the current page index is updated.
-    public init(context: CXLazyPageContext,
-                pageContent: @escaping (Int) -> PageContent,
-                onPageIndexUpdate: @escaping (Int) -> Void = { _ in })
-    {
+    public init(
+        context: CXLazyPageContext,
+        pageContent: @escaping (Int) -> PageContent,
+        onPageIndexUpdate: @escaping (Int) -> Void = { _ in }
+    ) {
         self.context = context
         self.pageContent = pageContent
         self.onPageIndexUpdate = onPageIndexUpdate
@@ -78,7 +39,7 @@ public class CXLazyPageViewController<PageContent: View>: UIViewController, UICo
         fatalError("init(coder:) has not been implemented")
     }
 
-    // MARK: - Lifecycle
+    // MARK: Public
 
     override public func viewDidLoad() {
         super.viewDidLoad()
@@ -120,44 +81,24 @@ public class CXLazyPageViewController<PageContent: View>: UIViewController, UICo
         scrollTo(indexPath: indexPath, animated: animated)
     }
 
-    // MARK: - Private methods
-
-    private func setupCollectionView() {
-        view.addSubview(collectionView)
-        collectionView.translatesAutoresizingMaskIntoConstraints = false
-        NSLayoutConstraint.activate([
-            collectionView.topAnchor.constraint(equalTo: view.topAnchor),
-            collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
-            collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-        ])
-    }
-
-    private func updateCurrentPageIndex(with index: Int) {
-        currentPageIndex = index
-        onPageIndexUpdate(index)
-    }
-
-    private func scrollTo(indexPath: IndexPath, animated: Bool = false) {
-        // disable paging temporarily to allow scrolling to a specific item, otherwise scrollToItem won't work.
-        // https://akshay-s-somkuwar.medium.com/uicollectionview-scrolltoitem-issue-and-its-fix-xcode-ios-14-and-swift-a886141b459a
-        collectionView.isPagingEnabled = false
-        collectionView.scrollToItem(at: indexPath, at: context.axis.scrollPosition, animated: animated)
-        collectionView.isPagingEnabled = context.isPagingEnabled ? true : false
-    }
-
     // MARK: - UICollectionViewDataSource
 
     public func numberOfSections(in _: UICollectionView) -> Int {
-        return 1
+        1
     }
 
     public func collectionView(_: UICollectionView, numberOfItemsInSection _: Int) -> Int {
-        return CXLazyPageViewController.maxPageCount
+        CXLazyPageViewController.maxPageCount
     }
 
-    public func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: CXLazyPageViewController.reuseIdentifier, for: indexPath)
+    public func collectionView(
+        _ collectionView: UICollectionView,
+        cellForItemAt indexPath: IndexPath
+    ) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(
+            withReuseIdentifier: CXLazyPageViewController.reuseIdentifier,
+            for: indexPath
+        )
 
         if !isFastScrolling {
             let pageIndex = indexPath.item - pageAnchor
@@ -198,24 +139,100 @@ public class CXLazyPageViewController<PageContent: View>: UIViewController, UICo
     public func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
         scrollViewDidEndDecelerating(scrollView)
     }
+
+    // MARK: Private
+
+    // MARK: - Constants
+
+    /// The maximum number of pages that can be displayed.
+    /// this is used to make the collection view fake infinite
+    private static var maxPageCount: Int { 100_000_000 }
+
+    private static var reuseIdentifier: String { "LazyPageViewControllerReuseIdentifier" }
+
+    /// The anchor page index used to make the starting point of the collection view.
+    private var pageAnchor = maxPageCount / 2
+
+    private let context: CXLazyPageContext
+
+    /// The content to be displayed on each page.
+    private var pageContent: (Int) -> PageContent
+
+    /// the page index of the currently visible page. this is the single source of
+    /// truth for the current page index
+    private var currentPageIndex = 0
+
+    /// A closure that is called when the current page index is updated.
+    private var onPageIndexUpdate: (Int) -> Void
+
+    /// A flag to indicate if the collection view is currently fast scrolling. this usually happens
+    /// when the `pageIndex` is changed significantly, this will prevent `pageContent` from being updated
+    /// until the scrolling is finished.
+    private var isFastScrolling = false
+
+    private lazy var collectionView: UICollectionView = {
+        let layout = UICollectionViewFlowLayout()
+        layout.scrollDirection = context.axis.scrollDirection
+        layout.minimumLineSpacing = 0
+        layout.minimumInteritemSpacing = 0
+
+        let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
+        collectionView.dataSource = self
+        collectionView.delegate = self
+        collectionView.isPagingEnabled = context.isPagingEnabled
+        collectionView.showsHorizontalScrollIndicator = false
+        collectionView.showsVerticalScrollIndicator = false
+        collectionView.register(
+            UICollectionViewCell.self,
+            forCellWithReuseIdentifier: CXLazyPageViewController.reuseIdentifier
+        )
+        return collectionView
+    }()
+
+    // MARK: - Private methods
+
+    private func setupCollectionView() {
+        view.addSubview(collectionView)
+        collectionView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            collectionView.topAnchor.constraint(equalTo: view.topAnchor),
+            collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
+            collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+        ])
+    }
+
+    private func updateCurrentPageIndex(with index: Int) {
+        currentPageIndex = index
+        onPageIndexUpdate(index)
+    }
+
+    private func scrollTo(indexPath: IndexPath, animated: Bool = false) {
+        // disable paging temporarily to allow scrolling to a specific item, otherwise scrollToItem won't work.
+        // https://akshay-s-somkuwar.medium.com/uicollectionview-scrolltoitem-issue-and-its-fix-xcode-ios-14-and-swift-a886141b459a
+        collectionView.isPagingEnabled = false
+        collectionView.scrollToItem(at: indexPath, at: context.axis.scrollPosition, animated: animated)
+        collectionView.isPagingEnabled = context.isPagingEnabled ? true : false
+    }
+
 }
 
-private extension SwiftUI.Axis {
-    var scrollDirection: UICollectionView.ScrollDirection {
+extension SwiftUI.Axis {
+    fileprivate var scrollDirection: UICollectionView.ScrollDirection {
         switch self {
         case .horizontal:
-            return .horizontal
+            .horizontal
         case .vertical:
-            return .vertical
+            .vertical
         }
     }
 
-    var scrollPosition: UICollectionView.ScrollPosition {
+    fileprivate var scrollPosition: UICollectionView.ScrollPosition {
         switch self {
         case .horizontal:
-            return .centeredHorizontally
+            .centeredHorizontally
         case .vertical:
-            return .centeredVertically
+            .centeredVertically
         }
     }
 }

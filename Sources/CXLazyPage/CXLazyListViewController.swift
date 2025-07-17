@@ -8,7 +8,107 @@
 import SwiftUI
 import UIKit
 
-public class CXLazyListViewController<ListContent: View>: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
+// MARK: - CXLazyListViewController
+
+public class CXLazyListViewController<ListContent: View>: UIViewController, UICollectionViewDataSource,
+    UICollectionViewDelegateFlowLayout
+{
+
+    // MARK: Lifecycle
+
+    // MARK: - Initializer
+
+    /// Initializes a new instance of `CXLazyListViewController`.
+    /// - Parameters:
+    ///   - listContent: A closure that provides the content for each page based on its index.
+    ///   - heightOf: A closure that provides the height for each page based on its index.
+    ///   - onPageIndexUpdate: A closure that is called when the current page index is updated.
+    public init(
+        listContent: @escaping (Int) -> ListContent,
+        heightOf: @escaping (Int) -> Int,
+        onPageIndexUpdate: @escaping (Int) -> Void = { _ in }
+    ) {
+        self.listContent = listContent
+        self.heightOf = heightOf
+        self.onPageIndexUpdate = onPageIndexUpdate
+        super.init(nibName: nil, bundle: nil)
+    }
+
+    @available(*, unavailable)
+    public required init?(coder _: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    // MARK: Public
+
+    override public func viewDidLoad() {
+        super.viewDidLoad()
+        setupCollectionView()
+    }
+
+    override public func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+
+        /// Ensure the collection view is scrolled to the anchor page index before displaying.
+        if collectionView.indexPathsForVisibleItems.contains(IndexPath(item: anchorPageIndex, section: 0)) == false {
+            collectionView.scrollToItem(at: IndexPath(item: anchorPageIndex, section: 0), at: .top, animated: false)
+        }
+    }
+
+    // MARK: - UICollectionViewDataSource
+
+    public func numberOfSections(in _: UICollectionView) -> Int {
+        1
+    }
+
+    public func collectionView(_: UICollectionView, numberOfItemsInSection _: Int) -> Int {
+        items.count
+    }
+
+    public func collectionView(
+        _ collectionView: UICollectionView,
+        cellForItemAt indexPath: IndexPath
+    ) -> UICollectionViewCell {
+        let cell = collectionView.dequeueReusableCell(
+            withReuseIdentifier: CXLazyListViewController.reuseIdentifier,
+            for: indexPath
+        )
+        cell.contentConfiguration = UIHostingConfiguration {
+            listContent(items[indexPath.item])
+        }
+        .margins(.all, .zero)
+        return cell
+    }
+
+    // MARK: - UICollectionViewDelegateFlowLayout
+
+    public func collectionView(
+        _ collectionView: UICollectionView,
+        layout _: UICollectionViewLayout,
+        sizeForItemAt indexPath: IndexPath
+    ) -> CGSize {
+        let itemHeight = heightOf(items[indexPath.item])
+        return CGSize(width: collectionView.bounds.width, height: CGFloat(itemHeight))
+    }
+
+    public func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        let offsetY = scrollView.contentOffset.y
+        let contentHeight = scrollView.contentSize.height
+        let scrollViewHeight = scrollView.bounds.height
+
+        guard contentHeight > .zero else {
+            return
+        }
+
+        if offsetY > contentHeight - scrollViewHeight - CXLazyListViewController.bottomBuffer {
+            loadMoreDataIfNeeded(reversed: false)
+        } else if offsetY < CXLazyListViewController.topBuffer {
+            loadMoreDataIfNeeded(reversed: true)
+        }
+    }
+
+    // MARK: Private
+
     // MARK: - Constants
 
     /// The initial number of items to display.
@@ -24,8 +124,6 @@ public class CXLazyListViewController<ListContent: View>: UIViewController, UICo
     private static var topBuffer: CGFloat { 400.0 }
 
     private static var reuseIdentifier: String { "LazyListViewControllerReuseIdentifier" }
-
-    // MARK: - Properties
 
     /// The page offset for the anchor page.
     private var items: [Int] = (-initialPageCount ..< initialPageCount).map { $0 }
@@ -58,47 +156,12 @@ public class CXLazyListViewController<ListContent: View>: UIViewController, UICo
         collectionView.isPagingEnabled = false
         collectionView.showsHorizontalScrollIndicator = false
         collectionView.showsVerticalScrollIndicator = false
-        collectionView.register(UICollectionViewCell.self, forCellWithReuseIdentifier: CXLazyListViewController.reuseIdentifier)
+        collectionView.register(
+            UICollectionViewCell.self,
+            forCellWithReuseIdentifier: CXLazyListViewController.reuseIdentifier
+        )
         return collectionView
     }()
-
-    // MARK: - Initializer
-
-    /// Initializes a new instance of `CXLazyListViewController`.
-    /// - Parameters:
-    ///   - listContent: A closure that provides the content for each page based on its index.
-    ///   - heightOf: A closure that provides the height for each page based on its index.
-    ///   - onPageIndexUpdate: A closure that is called when the current page index is updated.
-    public init(listContent: @escaping (Int) -> ListContent,
-                heightOf: @escaping (Int) -> Int,
-                onPageIndexUpdate: @escaping (Int) -> Void = { _ in })
-    {
-        self.listContent = listContent
-        self.heightOf = heightOf
-        self.onPageIndexUpdate = onPageIndexUpdate
-        super.init(nibName: nil, bundle: nil)
-    }
-
-    @available(*, unavailable)
-    public required init?(coder _: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    // MARK: - Lifecycle
-
-    override public func viewDidLoad() {
-        super.viewDidLoad()
-        setupCollectionView()
-    }
-
-    override public func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-
-        /// Ensure the collection view is scrolled to the anchor page index before displaying.
-        if collectionView.indexPathsForVisibleItems.contains(IndexPath(item: anchorPageIndex, section: 0)) == false {
-            collectionView.scrollToItem(at: IndexPath(item: anchorPageIndex, section: 0), at: .top, animated: false)
-        }
-    }
 
     // MARK: - Public methods
 
@@ -113,48 +176,6 @@ public class CXLazyListViewController<ListContent: View>: UIViewController, UICo
             collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
         ])
-    }
-
-    // MARK: - UICollectionViewDataSource
-
-    public func numberOfSections(in _: UICollectionView) -> Int {
-        return 1
-    }
-
-    public func collectionView(_: UICollectionView, numberOfItemsInSection _: Int) -> Int {
-        return items.count
-    }
-
-    public func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        let cell = collectionView.dequeueReusableCell(withReuseIdentifier: CXLazyListViewController.reuseIdentifier, for: indexPath)
-        cell.contentConfiguration = UIHostingConfiguration {
-            listContent(items[indexPath.item])
-        }
-        .margins(.all, .zero)
-        return cell
-    }
-
-    // MARK: - UICollectionViewDelegateFlowLayout
-
-    public func collectionView(_ collectionView: UICollectionView, layout _: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        let itemHeight = heightOf(items[indexPath.item])
-        return CGSize(width: collectionView.bounds.width, height: CGFloat(itemHeight))
-    }
-
-    public func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        let offsetY = scrollView.contentOffset.y
-        let contentHeight = scrollView.contentSize.height
-        let scrollViewHeight = scrollView.bounds.height
-
-        guard contentHeight > .zero else {
-            return
-        }
-
-        if offsetY > contentHeight - scrollViewHeight - CXLazyListViewController.bottomBuffer {
-            loadMoreDataIfNeeded(reversed: false)
-        } else if offsetY < CXLazyListViewController.topBuffer {
-            loadMoreDataIfNeeded(reversed: true)
-        }
     }
 
     private func loadMoreDataIfNeeded(reversed: Bool) {
