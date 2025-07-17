@@ -11,16 +11,12 @@ import UIKit
 public class CXLazyPageViewController<PageContent: View>: UIViewController, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
 
     // MARK: - Constants
-    
+
     /// The maximum number of pages that can be displayed.
     /// this is used to make the collection view fake infinite
-    private static var maxPageCount: Int {
-        10_0000000
-    }
+    private static var maxPageCount: Int { 100_000_000 }
 
-    private static var reuseIdentifier: String {
-        "LazyPageViewControllerReuseIdentifier"
-    }
+    private static var reuseIdentifier: String { "LazyPageViewControllerReuseIdentifier" }
 
     // MARK: - Properties
 
@@ -37,7 +33,7 @@ public class CXLazyPageViewController<PageContent: View>: UIViewController, UICo
     private var currentPageIndex: Int = 0
 
     /// A closure that is called when the current page index is updated.
-    private var onPageIndexUpdate: ((Int) -> Void)
+    private var onPageIndexUpdate: (Int) -> Void
 
     /// A flag to indicate if the collection view is currently fast scrolling. this usually happens
     /// when the `pageIndex` is changed significantly, this will prevent `pageContent` from being updated
@@ -61,7 +57,7 @@ public class CXLazyPageViewController<PageContent: View>: UIViewController, UICo
     }()
 
     // MARK: - Initializer
-    
+
     /// Initializes a new instance of `CXLazyPageViewController`.
     /// - Parameters:
     ///   - context: The context that defines the configuration of the lazy page.
@@ -69,20 +65,22 @@ public class CXLazyPageViewController<PageContent: View>: UIViewController, UICo
     ///   - onPageIndexUpdate: A closure that is called when the current page index is updated.
     public init(context: CXLazyPageContext,
                 pageContent: @escaping (Int) -> PageContent,
-                onPageIndexUpdate: @escaping (Int) -> Void = { _ in }) {
+                onPageIndexUpdate: @escaping (Int) -> Void = { _ in })
+    {
         self.context = context
         self.pageContent = pageContent
         self.onPageIndexUpdate = onPageIndexUpdate
         super.init(nibName: nil, bundle: nil)
     }
 
-    public required init?(coder: NSCoder) {
+    @available(*, unavailable)
+    public required init?(coder _: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 
     // MARK: - Lifecycle
 
-    public override func viewDidLoad() {
+    override public func viewDidLoad() {
         super.viewDidLoad()
         setupCollectionView()
 
@@ -90,7 +88,7 @@ public class CXLazyPageViewController<PageContent: View>: UIViewController, UICo
         updateCurrentPageIndex(with: 0)
     }
 
-    public override func viewDidLayoutSubviews() {
+    override public func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
 
         /// Ensure the collection view layout is updated to match the current bounds.
@@ -108,7 +106,7 @@ public class CXLazyPageViewController<PageContent: View>: UIViewController, UICo
     }
 
     // MARK: - Public methods
-    
+
     /// Scrolls to the specified page index if it is different from the current page index.
     /// - Parameters:
     ///   - pageIndex: The index of the page to scroll to. This index is relative to the `pageAnchor`.
@@ -131,7 +129,7 @@ public class CXLazyPageViewController<PageContent: View>: UIViewController, UICo
             collectionView.topAnchor.constraint(equalTo: view.topAnchor),
             collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
+            collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
         ])
     }
 
@@ -150,11 +148,11 @@ public class CXLazyPageViewController<PageContent: View>: UIViewController, UICo
 
     // MARK: - UICollectionViewDataSource
 
-    public func numberOfSections(in collectionView: UICollectionView) -> Int {
+    public func numberOfSections(in _: UICollectionView) -> Int {
         return 1
     }
 
-    public func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
+    public func collectionView(_: UICollectionView, numberOfItemsInSection _: Int) -> Int {
         return CXLazyPageViewController.maxPageCount
     }
 
@@ -202,7 +200,7 @@ public class CXLazyPageViewController<PageContent: View>: UIViewController, UICo
     }
 }
 
-extension SwiftUI.Axis {
+private extension SwiftUI.Axis {
     var scrollDirection: UICollectionView.ScrollDirection {
         switch self {
         case .horizontal:
@@ -217,7 +215,7 @@ extension SwiftUI.Axis {
         case .horizontal:
             return .centeredHorizontally
         case .vertical:
-            return .top
+            return .centeredVertically
         }
     }
 }
