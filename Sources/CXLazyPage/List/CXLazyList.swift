@@ -8,7 +8,6 @@
 import SwiftUI
 
 public struct CXLazyList<Content: View>: UIViewControllerRepresentable {
-
     // MARK: Lifecycle
 
     // MARK: - Initializer

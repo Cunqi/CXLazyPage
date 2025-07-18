@@ -12,7 +12,6 @@ import UIKit
 
 @MainActor
 class ViewportTracker {
-
     // MARK: Lifecycle
 
     init(collectionView: UICollectionView, onViewportUpdate: @escaping (Viewport) -> Void) {
@@ -103,7 +102,7 @@ extension CGRect {
 extension ViewportTracker {
     func attachTrackerOverlay() {
         guard let superview = collectionView.superview,
-            trackerOverlay.superview == nil else {
+              trackerOverlay.superview == nil else {
             return
         }
         superview.addSubview(trackerOverlay)

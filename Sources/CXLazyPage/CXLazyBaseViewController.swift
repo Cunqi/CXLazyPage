@@ -11,7 +11,6 @@ import UIKit
 // MARK: - CXLazyBaseViewController
 
 public class CXLazyBaseViewController: UIViewController {
-
     // MARK: Lifecycle
 
     init(onPageIndexUpdate: @escaping (Int) -> Void) {
@@ -113,13 +112,11 @@ public class CXLazyBaseViewController: UIViewController {
             collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
         ])
     }
-
 }
 
 // MARK: UICollectionViewDataSource
 
 extension CXLazyBaseViewController: UICollectionViewDataSource {
-
     public func numberOfSections(in _: UICollectionView) -> Int {
         1
     }

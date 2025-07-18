@@ -8,7 +8,6 @@
 import SwiftUI
 
 public struct CXLazyPage<Content: View>: UIViewControllerRepresentable {
-
     // MARK: Lifecycle
 
     // MARK: - Initializer
@@ -57,5 +56,4 @@ public struct CXLazyPage<Content: View>: UIViewControllerRepresentable {
     private let context: CXLazyPageContext
 
     @ViewBuilder private let content: (Int) -> Content
-
 }

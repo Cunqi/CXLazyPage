@@ -11,9 +11,7 @@ import UIKit
 // MARK: - CXLazyPageViewController
 
 public class CXLazyPageViewController<Content: View>: CXLazyBaseViewController,
-    UICollectionViewDelegateFlowLayout
-{
-
+    UICollectionViewDelegateFlowLayout {
     // MARK: Lifecycle
 
     // MARK: - Initializer

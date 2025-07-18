@@ -12,9 +12,7 @@ import UIKit
 // MARK: - CXLazyListViewController
 
 public class CXLazyListViewController<Content: View>: CXLazyBaseViewController,
-    UICollectionViewDelegateFlowLayout
-{
-
+    UICollectionViewDelegateFlowLayout {
     // MARK: Lifecycle
 
     // MARK: - Initializer
@@ -143,9 +141,8 @@ public class CXLazyListViewController<Content: View>: CXLazyBaseViewController,
     }
 
     override func scrollToPageIndexIfNeeded(_ pageIndex: Int, animated _: Bool = true) {
-        guard
-            let index = items.firstIndex(of: pageIndex),
-            currentPageIndex != index
+        guard let index = items.firstIndex(of: pageIndex),
+              currentPageIndex != index
         else {
             return
         }

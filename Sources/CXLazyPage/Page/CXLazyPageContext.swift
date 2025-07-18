@@ -8,13 +8,11 @@
 import SwiftUI
 
 public struct CXLazyPageContext {
-
     // MARK: Public
 
     // MARK: - Builder
 
     public class Builder {
-
         // MARK: Public
 
         public func axis(_ axis: Axis) -> Self {
@@ -45,7 +43,6 @@ public struct CXLazyPageContext {
         private var axis = Axis.horizontal
         private var isPagingEnabled = true
         private var itemHeight: CGFloat? = nil
-
     }
 
     // MARK: Internal
@@ -58,5 +55,4 @@ public struct CXLazyPageContext {
 
     /// The height of each item in the page.
     let itemHeight: CGFloat?
-
 }
