@@ -45,9 +45,20 @@ class ViewportTracker {
 
     private var onViewportUpdate: (Viewport) -> Void
 
+    private var trackerOverlay: UIView = {
+        let overlayView = UIView()
+        overlayView.translatesAutoresizingMaskIntoConstraints = false
+        overlayView.backgroundColor = .systemYellow.withAlphaComponent(0.2)
+        return overlayView
+    }()
+
     private func setupTracker() {
         trackerSubject
-            .throttle(for: ViewportTracker.throttleBuffer, scheduler: DispatchQueue.main, latest: true)
+            .throttle(
+                for: ViewportTracker.throttleBuffer,
+                scheduler: DispatchQueue.main,
+                latest: true
+            )
             .sink { [weak self] in
                 self?.trackViewPortUpdate()
             }
@@ -63,7 +74,8 @@ class ViewportTracker {
     private func fetchValidViewPort() -> Viewport? {
         let viewPorts = collectionView.indexPathsForVisibleItems
             .compactMap { indexPath -> Viewport? in
-                guard let frame = collectionView.layoutAttributesForItem(at: indexPath)?.frame else {
+                guard let frame = collectionView.layoutAttributesForItem(at: indexPath)?.frame
+                else {
                     return nil
                 }
                 let frameInSuperview = collectionView.convert(frame, to: collectionView.superview)
@@ -74,7 +86,7 @@ class ViewportTracker {
 
     private func isValidViewPort(viewPort: Viewport) -> Bool {
         let intersection = viewPort.rect.intersection(trackableArea)
-        return intersection.area >= viewPort.rect.area * ViewportTracker.validViewPortRatio
+        return intersection.area >= (viewPort.rect.area * ViewportTracker.validViewPortRatio)
     }
 }
 
@@ -85,5 +97,28 @@ extension CGRect {
 
     func heightScaled(by ratio: CGFloat) -> CGRect {
         CGRect(x: origin.x, y: origin.y, width: width, height: height * ratio)
+    }
+}
+
+extension ViewportTracker {
+    func attachTrackerOverlay() {
+        guard let superview = collectionView.superview,
+            trackerOverlay.superview == nil else {
+            return
+        }
+        superview.addSubview(trackerOverlay)
+        NSLayoutConstraint.activate([
+            trackerOverlay.leadingAnchor.constraint(equalTo: superview.leadingAnchor),
+            trackerOverlay.trailingAnchor.constraint(equalTo: superview.trailingAnchor),
+            trackerOverlay.topAnchor.constraint(equalTo: superview.topAnchor),
+            trackerOverlay.heightAnchor.constraint(
+                equalTo: superview.heightAnchor,
+                multiplier: ViewportTracker.heightScaledRatio
+            ),
+        ])
+    }
+
+    func removeTrackerOverlay() {
+        trackerOverlay.removeFromSuperview()
     }
 }

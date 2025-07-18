@@ -30,15 +30,18 @@ public struct CXLazyList<Content: View>: UIViewControllerRepresentable {
     public func makeUIViewController(context _: Context) -> CXLazyListViewController<Content> {
         CXLazyListViewController(content: content, heightOf: heightOf) { currentPage in
             DispatchQueue.main.async {
+                print("Current page updated to: \(currentPage)")
                 self.currentPage = currentPage
             }
         }
     }
 
     public func updateUIViewController(
-        _: CXLazyListViewController<Content>,
+        _ uiViewController: CXLazyListViewController<Content>,
         context _: Context
-    ) { }
+    ) {
+        uiViewController.scrollToPageIndexIfNeeded(currentPage)
+    }
 
     // MARK: Private
 
@@ -47,5 +50,4 @@ public struct CXLazyList<Content: View>: UIViewControllerRepresentable {
     @ViewBuilder private var content: (Int) -> Content
 
     private var heightOf: (Int) -> Int
-
 }

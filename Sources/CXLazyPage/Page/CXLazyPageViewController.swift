@@ -35,45 +35,6 @@ public class CXLazyPageViewController<Content: View>: CXLazyBaseViewController,
 
     // MARK: Public
 
-    // MARK: - Public methods
-
-    /// Scrolls to the specified page index if it is different from the current page index.
-    /// - Parameters:
-    ///   - pageIndex: The index of the page to scroll to. This index is relative to the `pageAnchor`.
-    ///   - animated: A Boolean value indicating whether the scrolling should be animated. Defaults to `true`.
-    public func scrollToPageIfNeeded(_ pageIndex: Int, animated: Bool = true) {
-        guard pageIndex != currentPageIndex else {
-            return
-        }
-        isFastScrolling = true
-        let indexPath = IndexPath(item: pageIndex + pageAnchor, section: 0)
-        scrollTo(indexPath: indexPath, animated: animated)
-    }
-
-    // MARK: - UICollectionViewDelegateFlowLayout
-
-    public func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
-        let pageSize = context.axis == .horizontal
-            ? collectionView.bounds.width
-            : collectionView.bounds.height
-        let offset = context.axis == .horizontal
-            ? scrollView.contentOffset.x
-            : scrollView.contentOffset.y
-
-        // Calculate the page index based on the current offset and page size.
-        let page = Int((offset + pageSize / 2) / pageSize)
-        let pageIndex = page - pageAnchor
-
-        updateCurrentPageIndex(with: pageIndex)
-
-        // if it is decelerating from a fast scroll, we need to reload the data to ensure
-        // the displayed content is correct
-        if isFastScrolling {
-            collectionView.reloadData()
-            isFastScrolling = false
-        }
-    }
-
     public override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -102,7 +63,28 @@ public class CXLazyPageViewController<Content: View>: CXLazyBaseViewController,
         }
     }
 
-    public func scrollViewDidEndDragging(_ scrollView: UIScrollView, willDecelerate decelerate: Bool) {
+    // MARK: - UICollectionViewDelegateFlowLayout
+
+    public func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+        let pageSize = context.axis == .horizontal
+            ? collectionView.bounds.width
+            : collectionView.bounds.height
+        let offset = context.axis == .horizontal
+            ? scrollView.contentOffset.x
+            : scrollView.contentOffset.y
+
+        // Calculate the page index based on the current offset and page size.
+        let page = Int((offset + pageSize / 2) / pageSize)
+        let pageIndex = page - pageAnchor
+
+        updateCurrentPageIndex(with: pageIndex)
+        reloadAfterFastScrollIfNeeded()
+    }
+
+    public func scrollViewDidEndDragging(
+        _ scrollView: UIScrollView,
+        willDecelerate decelerate: Bool
+    ) {
         if !decelerate {
             scrollViewDidEndDecelerating(scrollView)
         }
@@ -118,6 +100,21 @@ public class CXLazyPageViewController<Content: View>: CXLazyBaseViewController,
         CXLazyPageViewController.maxPageCount
     }
 
+    // MARK: - Internal methods
+
+    /// Scrolls to the specified page index if it is different from the current page index.
+    /// - Parameters:
+    ///   - pageIndex: The index of the page to scroll to. This index is relative to the `pageAnchor`.
+    ///   - animated: A Boolean value indicating whether the scrolling should be animated. Defaults to `true`.
+    override func scrollToPageIndexIfNeeded(_ pageIndex: Int, animated: Bool = true) {
+        guard pageIndex != currentPageIndex else {
+            return
+        }
+        isFastScrolling = true
+        let indexPath = IndexPath(item: pageIndex + pageAnchor, section: 0)
+        scrollTo(indexPath: indexPath, animated: animated)
+    }
+
     override func setupCollectionViewLayout(layout: UICollectionViewFlowLayout) {
         layout.scrollDirection = context.axis.scrollDirection
     }
@@ -128,19 +125,16 @@ public class CXLazyPageViewController<Content: View>: CXLazyBaseViewController,
     }
 
     override func configure(cell: UICollectionViewCell, at indexPath: IndexPath) {
-        if !isFastScrolling {
-            let pageIndex = indexPath.item - pageAnchor
-            cell.contentConfiguration = UIHostingConfiguration {
-                content(pageIndex)
-            }
-            .margins(.all, .zero)
+        let pageIndex = indexPath.item - pageAnchor
+        cell.contentConfiguration = UIHostingConfiguration {
+            content(pageIndex)
         }
+        .margins(.all, .zero)
     }
 
-    // MARK: - Private methods
-
     override func scrollTo(indexPath: IndexPath, animated: Bool = false) {
-        // disable paging temporarily to allow scrolling to a specific item, otherwise scrollToItem won't work.
+        // disable paging temporarily to allow scrolling to a specific item, otherwise
+        // scrollToItem won't work.
         // https://akshay-s-somkuwar.medium.com/uicollectionview-scrolltoitem-issue-and-its-fix-xcode-ios-14-and-swift-a886141b459a
         collectionView.isPagingEnabled = false
         collectionView.scrollToItem(
@@ -166,11 +160,6 @@ public class CXLazyPageViewController<Content: View>: CXLazyBaseViewController,
 
     /// The content to be displayed on each page.
     private let content: (Int) -> Content
-
-    /// A flag to indicate if the collection view is currently fast scrolling. this usually happens
-    /// when the `pageIndex` is changed significantly, this will prevent `pageContent` from being updated
-    /// until the scrolling is finished.
-    private var isFastScrolling = false
 }
 
 extension SwiftUI.Axis {
