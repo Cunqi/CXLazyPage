@@ -7,17 +7,17 @@
 
 import SwiftUI
 
-public struct CXLazyList<ListContent: View>: UIViewControllerRepresentable {
+public struct CXLazyList<Content: View>: UIViewControllerRepresentable {
 
     // MARK: Lifecycle
 
     // MARK: - Initializer
 
     public init(
-        @ViewBuilder listContent: @escaping (Int) -> ListContent,
+        @ViewBuilder content: @escaping (Int) -> Content,
         heightOf: @escaping (Int) -> Int
     ) {
-        self.listContent = listContent
+        self.content = content
         self.heightOf = heightOf
     }
 
@@ -25,15 +25,16 @@ public struct CXLazyList<ListContent: View>: UIViewControllerRepresentable {
 
     // MARK: - Methods
 
-    public func makeUIViewController(context _: Context) -> CXLazyListViewController<ListContent> {
-        CXLazyListViewController(listContent: listContent, heightOf: heightOf)
+    public func makeUIViewController(context _: Context) -> CXLazyListViewController<Content> {
+        CXLazyListViewController(content: content, heightOf: heightOf) { _ in
+        }
     }
 
-    public func updateUIViewController(_: CXLazyListViewController<ListContent>, context _: Context) { }
+    public func updateUIViewController(_: CXLazyListViewController<Content>, context _: Context) { }
 
     // MARK: Private
 
-    @ViewBuilder private var listContent: (Int) -> ListContent
+    @ViewBuilder private let content: (Int) -> Content
 
     private var heightOf: (Int) -> Int
 

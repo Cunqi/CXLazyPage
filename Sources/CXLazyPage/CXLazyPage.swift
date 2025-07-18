@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-public struct CXLazyPage<PageContent: View>: UIViewControllerRepresentable {
+public struct CXLazyPage<Content: View>: UIViewControllerRepresentable {
 
     // MARK: Lifecycle
 
@@ -18,14 +18,14 @@ public struct CXLazyPage<PageContent: View>: UIViewControllerRepresentable {
         isPagingEnabled: Bool = true,
         itemHeight: CGFloat? = nil,
         currentPage: Binding<Int> = .constant(0),
-        @ViewBuilder pageContent: @escaping (Int) -> PageContent
+        @ViewBuilder content: @escaping (Int) -> Content
     ) {
         context = CXLazyPageContext.Builder()
             .axis(axis)
             .pagingEnabled(isPagingEnabled)
             .itemHeight(itemHeight)
             .build()
-        self.pageContent = pageContent
+        self.content = content
         _currentPage = currentPage
     }
 
@@ -33,15 +33,18 @@ public struct CXLazyPage<PageContent: View>: UIViewControllerRepresentable {
 
     // MARK: - Methods
 
-    public func makeUIViewController(context _: Context) -> CXLazyPageViewController<PageContent> {
-        CXLazyPageViewController(context: context, pageContent: pageContent) { currentPage in
+    public func makeUIViewController(context _: Context) -> CXLazyPageViewController<Content> {
+        CXLazyPageViewController(context: context, content: content) { currentPage in
             DispatchQueue.main.async {
                 self.currentPage = currentPage
             }
         }
     }
 
-    public func updateUIViewController(_ uiViewController: CXLazyPageViewController<PageContent>, context _: Context) {
+    public func updateUIViewController(
+        _ uiViewController: CXLazyPageViewController<Content>,
+        context _: Context
+    ) {
         uiViewController.scrollToPageIfNeeded(currentPage)
     }
 
@@ -53,6 +56,6 @@ public struct CXLazyPage<PageContent: View>: UIViewControllerRepresentable {
 
     private let context: CXLazyPageContext
 
-    @ViewBuilder private var pageContent: (Int) -> PageContent
+    @ViewBuilder private let content: (Int) -> Content
 
 }
