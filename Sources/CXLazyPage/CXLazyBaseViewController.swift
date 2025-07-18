@@ -42,6 +42,11 @@ public class CXLazyBaseViewController: UIViewController {
     /// the anchor page index used to make the starting point of the collection view
     var anchorPageIndex = 0
 
+    /// A flag to indicate if the collection view is currently fast scrolling. this usually happens
+    /// when the `pageIndex` is changed significantly, this will prevent `pageContent` from being updated
+    /// until the scrolling is finished.
+    var isFastScrolling = false
+
     /// A closure that is called when the current page index is updated.
     let onPageIndexUpdate: (Int) -> Void
 
@@ -67,9 +72,14 @@ public class CXLazyBaseViewController: UIViewController {
         .zero
     }
 
+    func scrollToPageIndexIfNeeded(_: Int, animated _: Bool = true) { }
+
     func scrollTo(indexPath _: IndexPath, animated _: Bool = true) { }
 
     func updateCurrentPageIndex(with pageIndex: Int) {
+        guard pageIndex != currentPageIndex else {
+            return
+        }
         currentPageIndex = pageIndex
         onPageIndexUpdate(pageIndex)
     }
@@ -80,6 +90,15 @@ public class CXLazyBaseViewController: UIViewController {
 
     func configure(cell _: UICollectionViewCell, at _: IndexPath) {
         fatalError("Subclasses must implement this method.")
+    }
+
+    /// if it is decelerating from a fast scroll, we need to reload the data to ensure
+    /// the displayed content is correct
+    func reloadAfterFastScrollIfNeeded() {
+        if isFastScrolling {
+            isFastScrolling = false
+            collectionView.reloadData()
+        }
     }
 
     // MARK: Private
@@ -117,7 +136,9 @@ extension CXLazyBaseViewController: UICollectionViewDataSource {
             withReuseIdentifier: CXLazyBaseViewController.reuseIdentifier,
             for: indexPath
         )
-        configure(cell: cell, at: indexPath)
+        if !isFastScrolling {
+            configure(cell: cell, at: indexPath)
+        }
         return cell
     }
 }
