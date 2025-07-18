@@ -14,27 +14,37 @@ import UIKit
 class ViewportTracker {
     // MARK: Lifecycle
 
-    init(collectionView: UICollectionView, onViewportUpdate: @escaping (Viewport) -> Void) {
+    init(
+        context: ViewportTrackerContext,
+        collectionView: UICollectionView,
+        onViewportUpdate: @escaping (Viewport) -> Void
+    ) {
+        self.context = context
         self.collectionView = collectionView
-        trackableArea = collectionView.frame.heightScaled(by: ViewportTracker.heightScaledRatio)
         self.onViewportUpdate = onViewportUpdate
+
+        detectArea = ViewportTracker.makeDetectArea(
+            context: context,
+            collectionView: collectionView
+        )
 
         setupTracker()
     }
 
     // MARK: Internal
 
-    func track() {
+    func track(_ ignoreTracking: Bool = false) {
+        if ignoreTracking {
+            return
+        }
         trackerSubject.send()
     }
 
     // MARK: Private
 
-    private static let heightScaledRatio: CGFloat = 2.0 / 3.0
-    private static let validViewPortRatio: CGFloat = 0.8
-    private static let throttleBuffer = DispatchQueue.SchedulerTimeType.Stride.milliseconds(100)
+    private let context: ViewportTrackerContext
 
-    private let trackableArea: CGRect
+    private let detectArea: CGRect
 
     private let collectionView: UICollectionView
 
@@ -45,16 +55,28 @@ class ViewportTracker {
     private var onViewportUpdate: (Viewport) -> Void
 
     private var trackerOverlay: UIView = {
-        let overlayView = UIView()
+        let overlayView = TrackingOverlayView()
         overlayView.translatesAutoresizingMaskIntoConstraints = false
         overlayView.backgroundColor = .systemYellow.withAlphaComponent(0.2)
         return overlayView
     }()
 
+    private static func makeDetectArea(
+        context: ViewportTrackerContext,
+        collectionView: UICollectionView
+    ) -> CGRect {
+        CGRect(
+            x: collectionView.frame.origin.x,
+            y: collectionView.frame.origin.y + context.detectAreaOriginYOffset,
+            width: collectionView.frame.width,
+            height: collectionView.frame.height * context.detectAreaRatio
+        )
+    }
+
     private func setupTracker() {
         trackerSubject
             .throttle(
-                for: ViewportTracker.throttleBuffer,
+                for: context.detectFrequencyBuffer,
                 scheduler: DispatchQueue.main,
                 latest: true
             )
@@ -80,12 +102,12 @@ class ViewportTracker {
                 let frameInSuperview = collectionView.convert(frame, to: collectionView.superview)
                 return Viewport(rect: frameInSuperview, indexPath: indexPath)
             }
-        return viewPorts.first(where: isValidViewPort)
+        return viewPorts.first(where: isViewportFulfilled)
     }
 
-    private func isValidViewPort(viewPort: Viewport) -> Bool {
-        let intersection = viewPort.rect.intersection(trackableArea)
-        return intersection.area >= (viewPort.rect.area * ViewportTracker.validViewPortRatio)
+    private func isViewportFulfilled(_ viewPort: Viewport) -> Bool {
+        let intersection = viewPort.rect.intersection(detectArea)
+        return intersection.area >= (viewPort.rect.area * context.fulfillThreshold)
     }
 }
 
@@ -93,16 +115,11 @@ extension CGRect {
     var area: CGFloat {
         width * height
     }
-
-    func heightScaled(by ratio: CGFloat) -> CGRect {
-        CGRect(x: origin.x, y: origin.y, width: width, height: height * ratio)
-    }
 }
 
 extension ViewportTracker {
     func attachTrackerOverlay() {
-        guard let superview = collectionView.superview,
-              trackerOverlay.superview == nil else {
+        guard let superview = collectionView.superview, trackerOverlay.superview == nil else {
             return
         }
         superview.addSubview(trackerOverlay)
@@ -112,12 +129,21 @@ extension ViewportTracker {
             trackerOverlay.topAnchor.constraint(equalTo: superview.topAnchor),
             trackerOverlay.heightAnchor.constraint(
                 equalTo: superview.heightAnchor,
-                multiplier: ViewportTracker.heightScaledRatio
-            ),
+                multiplier: context.detectAreaRatio
+            )
         ])
     }
 
     func removeTrackerOverlay() {
         trackerOverlay.removeFromSuperview()
+    }
+}
+
+extension ViewportTracker {
+    class TrackingOverlayView: UIView {
+        override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+            let hitView = super.hitTest(point, with: event)
+            return hitView == self ? nil : hitView
+        }
     }
 }

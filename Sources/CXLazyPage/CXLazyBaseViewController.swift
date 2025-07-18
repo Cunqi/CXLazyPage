@@ -13,7 +13,8 @@ import UIKit
 public class CXLazyBaseViewController: UIViewController {
     // MARK: Lifecycle
 
-    init(onPageIndexUpdate: @escaping (Int) -> Void) {
+    init(context: CXLazyPageContext, onPageIndexUpdate: @escaping (Int) -> Void) {
+        self.context = context
         self.onPageIndexUpdate = onPageIndexUpdate
         super.init(nibName: nil, bundle: nil)
     }
@@ -27,7 +28,25 @@ public class CXLazyBaseViewController: UIViewController {
 
     public override func viewDidLoad() {
         super.viewDidLoad()
-        setupCollectionViewLayout()
+        setupAndLayoutConstraints()
+
+        // Set up the anchor page index to the initial page index
+        anchorPageIndex = initialPageIndex
+
+        // set `curerntPageIndex` to anchorPageIndex initially
+        updateCurrentPageIndex(with: anchorPageIndex)
+    }
+
+    public override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+
+        onViewDidLayoutSubviews()
+
+        /// Ensure the collection view is scrolled to the anchor page index before displaying.
+        let anchorIndexPath = IndexPath(item: anchorPageIndex, section: 0)
+        if collectionView.indexPathsForVisibleItems.contains(anchorIndexPath) == false {
+            scrollTo(indexPath: anchorIndexPath)
+        }
     }
 
     // MARK: Internal
@@ -46,6 +65,9 @@ public class CXLazyBaseViewController: UIViewController {
     /// until the scrolling is finished.
     var isFastScrolling = false
 
+    /// The context that defines the configuration of the lazy page.
+    let context: CXLazyPageContext
+
     /// A closure that is called when the current page index is updated.
     let onPageIndexUpdate: (Int) -> Void
 
@@ -53,23 +75,36 @@ public class CXLazyBaseViewController: UIViewController {
         let layout = UICollectionViewFlowLayout()
         layout.minimumLineSpacing = 0
         layout.minimumInteritemSpacing = 0
-        setupCollectionViewLayout(layout: layout)
+        layout.scrollDirection = context.axis.scrollDirection
 
         let collectionView = UICollectionView(frame: .zero, collectionViewLayout: layout)
         collectionView.dataSource = self
+        collectionView.delegate = flowlayoutDelegate
         collectionView.showsHorizontalScrollIndicator = false
         collectionView.showsVerticalScrollIndicator = false
+        collectionView.isPagingEnabled = context.isPagingEnabled
         collectionView.register(
             UICollectionViewCell.self,
             forCellWithReuseIdentifier: CXLazyBaseViewController.reuseIdentifier
         )
-        setupCollectionView(collectionView: collectionView)
         return collectionView
     }()
 
     var numberOfItems: Int {
         .zero
     }
+
+    var initialPageIndex: Int {
+        .zero
+    }
+
+    var flowlayoutDelegate: UICollectionViewDelegateFlowLayout? {
+        nil
+    }
+
+    /// called when `viewDidLayoutSubviews` is called, subclasses can override this method to perform
+    /// any additional layout or configuration.
+    func onViewDidLayoutSubviews() { }
 
     func scrollToPageIndexIfNeeded(_: Int, animated _: Bool = true) { }
 
@@ -82,10 +117,6 @@ public class CXLazyBaseViewController: UIViewController {
         currentPageIndex = pageIndex
         onPageIndexUpdate(pageIndex)
     }
-
-    func setupCollectionViewLayout(layout _: UICollectionViewFlowLayout) { }
-
-    func setupCollectionView(collectionView _: UICollectionView) { }
 
     func configure(cell _: UICollectionViewCell, at _: IndexPath) {
         fatalError("Subclasses must implement this method.")
@@ -102,14 +133,14 @@ public class CXLazyBaseViewController: UIViewController {
 
     // MARK: Private
 
-    private func setupCollectionViewLayout() {
+    private func setupAndLayoutConstraints() {
         view.addSubview(collectionView)
         collectionView.translatesAutoresizingMaskIntoConstraints = false
         NSLayoutConstraint.activate([
             collectionView.topAnchor.constraint(equalTo: view.topAnchor),
             collectionView.bottomAnchor.constraint(equalTo: view.bottomAnchor),
             collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
+            collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
         ])
     }
 }
@@ -137,5 +168,37 @@ extension CXLazyBaseViewController: UICollectionViewDataSource {
             configure(cell: cell, at: indexPath)
         }
         return cell
+    }
+}
+
+// MARK: UIScrollViewDelegate
+
+extension CXLazyBaseViewController: UIScrollViewDelegate {
+    public func scrollViewDidEndDragging(
+        _ scrollView: UIScrollView,
+        willDecelerate decelerate: Bool
+    ) {
+        if !decelerate {
+            scrollViewDidEndDecelerating(scrollView)
+        }
+    }
+
+    public func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
+        scrollViewDidEndDecelerating(scrollView)
+    }
+
+    public func scrollViewDidEndDecelerating(_: UIScrollView) { }
+
+    public func scrollViewDidScroll(_ scrollView: UIScrollView) { }
+}
+
+extension SwiftUI.Axis {
+    fileprivate var scrollDirection: UICollectionView.ScrollDirection {
+        switch self {
+        case .horizontal:
+            .horizontal
+        case .vertical:
+            .vertical
+        }
     }
 }

@@ -19,32 +19,24 @@ public class CXLazyListViewController<Content: View>: CXLazyBaseViewController,
 
     /// Initializes a new instance of `CXLazyListViewController`.
     /// - Parameters:
+    ///   - context: The context that defines the configuration of the lazy page.
     ///   - content: A closure that provides the content for each page based on its index.
     ///   - heightOf: A closure that provides the height for each page based on its index.
     ///   - onPageIndexUpdate: A closure that is called when the current page index is updated.
     public init(
+        context: CXLazyPageContext,
         content: @escaping (Int) -> Content,
         heightOf: @escaping (Int) -> Int,
         onPageIndexUpdate: @escaping (Int) -> Void
     ) {
         self.content = content
         self.heightOf = heightOf
-        super.init(onPageIndexUpdate: onPageIndexUpdate)
+        super.init(context: context, onPageIndexUpdate: onPageIndexUpdate)
     }
 
     // MARK: Public
 
-    override public func viewDidLoad() {
-        super.viewDidLoad()
-
-        // Set up the anchor page index to the middle of the initial page count.
-        anchorPageIndex = CXLazyListViewController.initialPageCount
-
-        // set `curerntPageIndex` to anchorPageIndex initially
-        updateCurrentPageIndex(with: anchorPageIndex)
-    }
-
-    override public func viewDidLayoutSubviews() {
+    public override func viewDidLayoutSubviews() {
         super.viewDidLayoutSubviews()
 
         // Ensure the collection view is scrolled to the anchor page index before displaying.
@@ -67,24 +59,11 @@ public class CXLazyListViewController<Content: View>: CXLazyBaseViewController,
         return CGSize(width: collectionView.bounds.width, height: CGFloat(itemHeight))
     }
 
-    public func scrollViewDidEndDecelerating(_: UIScrollView) {
+    public override func scrollViewDidEndDecelerating(_: UIScrollView) {
         reloadAfterFastScrollIfNeeded()
     }
 
-    public func scrollViewDidEndDragging(
-        _ scrollView: UIScrollView,
-        willDecelerate decelerate: Bool
-    ) {
-        if !decelerate {
-            scrollViewDidEndDecelerating(scrollView)
-        }
-    }
-
-    public func scrollViewDidEndScrollingAnimation(_ scrollView: UIScrollView) {
-        scrollViewDidEndDecelerating(scrollView)
-    }
-
-    public func scrollViewDidScroll(_ scrollView: UIScrollView) {
+    public override func scrollViewDidScroll(_ scrollView: UIScrollView) {
         let offsetY = scrollView.contentOffset.y
         let contentHeight = scrollView.contentSize.height
         let scrollViewHeight = scrollView.bounds.height
@@ -99,7 +78,7 @@ public class CXLazyListViewController<Content: View>: CXLazyBaseViewController,
             loadMoreDataIfNeeded(reversed: true)
         }
 
-        viewportTracker.track()
+        viewportTracker.track(isFastScrolling)
     }
 
     // MARK: Internal
@@ -108,13 +87,12 @@ public class CXLazyListViewController<Content: View>: CXLazyBaseViewController,
         items.count
     }
 
-    override func setupCollectionViewLayout(layout: UICollectionViewFlowLayout) {
-        layout.scrollDirection = .vertical
+    override var initialPageIndex: Int {
+        CXLazyListViewController.initialPageCount
     }
 
-    override func setupCollectionView(collectionView: UICollectionView) {
-        collectionView.isPagingEnabled = false
-        collectionView.delegate = self
+    override var flowlayoutDelegate: UICollectionViewDelegateFlowLayout? {
+        self
     }
 
     override func configure(cell: UICollectionViewCell, at indexPath: IndexPath) {
@@ -141,9 +119,7 @@ public class CXLazyListViewController<Content: View>: CXLazyBaseViewController,
     }
 
     override func scrollToPageIndexIfNeeded(_ pageIndex: Int, animated _: Bool = true) {
-        guard let index = items.firstIndex(of: pageIndex),
-              currentPageIndex != index
-        else {
+        guard let index = items.firstIndex(of: pageIndex), currentPageIndex != index else {
             return
         }
         isFastScrolling = true
@@ -179,6 +155,7 @@ public class CXLazyListViewController<Content: View>: CXLazyBaseViewController,
     private var heightOf: (Int) -> Int
 
     private lazy var viewportTracker = ViewportTracker(
+        context: context.viewportTrackerContext,
         collectionView: collectionView,
         onViewportUpdate: { [weak self, items] viewport in
             self?.updateCurrentPageIndex(with: viewport.indexPath.item)
