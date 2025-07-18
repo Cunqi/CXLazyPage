@@ -66,7 +66,8 @@ public class CXLazyPageViewController<Content: View>: CXLazyBaseViewController,
 
         updateCurrentPageIndex(with: pageIndex)
 
-        // if it is decelerating from a fast scroll, we need to reload the data to ensure the displayed content is correct
+        // if it is decelerating from a fast scroll, we need to reload the data to ensure
+        // the displayed content is correct
         if isFastScrolling {
             collectionView.reloadData()
             isFastScrolling = false

@@ -5,6 +5,7 @@
 //  Created by Cunqi Xiao on 7/14/25.
 //
 
+import Combine
 import SwiftUI
 import UIKit
 
@@ -75,6 +76,21 @@ public class CXLazyListViewController<Content: View>: CXLazyBaseViewController,
         } else if offsetY < CXLazyListViewController.topBuffer {
             loadMoreDataIfNeeded(reversed: true)
         }
+
+        viewportTracker.track()
+    }
+
+    // MARK: - Public methods
+
+    public func scrollToPageIfNeeded(_ pageIndex: Int) {
+        guard let index = items.firstIndex(of: pageIndex) else {
+            return
+        }
+        collectionView.scrollToItem(
+            at: IndexPath(item: index, section: 0),
+            at: .top,
+            animated: true
+        )
     }
 
     // MARK: Internal
@@ -126,6 +142,13 @@ public class CXLazyListViewController<Content: View>: CXLazyBaseViewController,
 
     /// The height of each page.
     private var heightOf: (Int) -> Int
+
+    private lazy var viewportTracker = ViewportTracker(
+        collectionView: collectionView,
+        onViewportUpdate: { [weak self, items] viewport in
+            self?.onPageIndexUpdate(items[viewport.indexPath.item])
+        }
+    )
 
     // MARK: - Private methods
 
