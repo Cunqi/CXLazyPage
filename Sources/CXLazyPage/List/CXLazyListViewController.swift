@@ -115,6 +115,14 @@ public class CXLazyListViewController<Content: View>: CXLazyBaseViewController,
         .margins(.all, .zero)
     }
 
+    override func scrollTo(indexPath: IndexPath, animated: Bool = false) {
+        collectionView.scrollToItem(
+            at: indexPath,
+            at: .top,
+            animated: animated
+        )
+    }
+
     // MARK: Private
 
     // MARK: - Constants

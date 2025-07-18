@@ -79,6 +79,9 @@ public class CXLazyPageViewController<Content: View>: CXLazyBaseViewController,
 
         // set `curerntPageIndex` to 0 initially
         updateCurrentPageIndex(with: .zero)
+
+        /// Set the anchor page index to the middle of the maximum page count.
+        anchorPageIndex = CXLazyPageViewController.maxPageCount / 2
     }
 
     public override func viewDidLayoutSubviews() {
