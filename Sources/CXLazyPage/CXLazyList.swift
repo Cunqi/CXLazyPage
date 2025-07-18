@@ -7,29 +7,35 @@
 
 import SwiftUI
 
-public struct CXLazyList<ListContent: View>: UIViewControllerRepresentable {
+public struct CXLazyList<Content: View>: UIViewControllerRepresentable {
 
-    // MARK: - Properties
-
-    @ViewBuilder
-    private var listContent: (Int) -> ListContent
-
-    private var heightOf: (Int) -> Int
+    // MARK: Lifecycle
 
     // MARK: - Initializer
 
-    public init(@ViewBuilder listContent: @escaping (Int) -> ListContent,
-                heightOf: @escaping (Int) -> Int) {
-        self.listContent = listContent
+    public init(
+        @ViewBuilder content: @escaping (Int) -> Content,
+        heightOf: @escaping (Int) -> Int
+    ) {
+        self.content = content
         self.heightOf = heightOf
     }
 
+    // MARK: Public
+
     // MARK: - Methods
 
-    public func makeUIViewController(context: Context) -> CXLazyListViewController<ListContent> {
-        CXLazyListViewController(listContent: listContent, heightOf: heightOf)
+    public func makeUIViewController(context _: Context) -> CXLazyListViewController<Content> {
+        CXLazyListViewController(content: content, heightOf: heightOf) { _ in
+        }
     }
 
-    public func updateUIViewController(_ uiViewController: CXLazyListViewController<ListContent>, context: Context) {
-    }
+    public func updateUIViewController(_: CXLazyListViewController<Content>, context _: Context) { }
+
+    // MARK: Private
+
+    @ViewBuilder private let content: (Int) -> Content
+
+    private var heightOf: (Int) -> Int
+
 }
