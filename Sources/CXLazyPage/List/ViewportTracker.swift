@@ -119,7 +119,9 @@ extension CGRect {
 
 extension ViewportTracker {
     func attachTrackerOverlay() {
-        guard let superview = collectionView.superview, trackerOverlay.superview == nil else {
+        guard context.showDetectArea,
+              let superview = collectionView.superview,
+              trackerOverlay.superview == nil else {
             return
         }
         superview.addSubview(trackerOverlay)
