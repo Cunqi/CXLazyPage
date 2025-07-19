@@ -88,7 +88,7 @@ public class CXLazyPageViewController<Content: View>: CXLazyBaseViewController,
     ///   - pageIndex: The index of the page to scroll to. This index is relative to the `pageAnchor`.
     ///   - animated: A Boolean value indicating whether the scrolling should be animated. Defaults to `true`.
     override func scrollToPageIndexIfNeeded(_ pageIndex: Int, animated: Bool = true) {
-        guard pageIndex != currentPageIndex else {
+        guard pageIndex + anchorPageIndex != currentPageIndex else {
             return
         }
         isFastScrolling = true
