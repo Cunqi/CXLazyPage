@@ -108,7 +108,18 @@ public class CXLazyBaseViewController: UIViewController {
 
     func scrollToPageIndexIfNeeded(_: Int, animated _: Bool = true) { }
 
-    func scrollTo(indexPath _: IndexPath, animated _: Bool = true) { }
+    func scrollTo(indexPath: IndexPath, animated: Bool = false) {
+        // disable paging temporarily to allow scrolling to a specific item, otherwise
+        // scrollToItem won't work.
+        // https://akshay-s-somkuwar.medium.com/uicollectionview-scrolltoitem-issue-and-its-fix-xcode-ios-14-and-swift-a886141b459a
+        collectionView.isPagingEnabled = false
+        collectionView.scrollToItem(
+            at: indexPath,
+            at: context.axis.scrollPosition,
+            animated: animated
+        )
+        collectionView.isPagingEnabled = context.isPagingEnabled ? true : false
+    }
 
     func updateCurrentPageIndex(with pageIndex: Int) {
         guard pageIndex != currentPageIndex else {
@@ -199,6 +210,15 @@ extension SwiftUI.Axis {
             .horizontal
         case .vertical:
             .vertical
+        }
+    }
+
+    fileprivate var scrollPosition: UICollectionView.ScrollPosition {
+        switch self {
+        case .horizontal:
+            .centeredHorizontally
+        case .vertical:
+            .centeredVertically
         }
     }
 }
