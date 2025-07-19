@@ -126,7 +126,7 @@ extension ViewportTrackerContext {
 
     // MARK: Internal
 
-    var builder: Builder {
+    public var builder: Builder {
         Builder(from: self)
     }
 }
