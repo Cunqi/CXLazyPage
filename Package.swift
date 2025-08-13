@@ -7,14 +7,14 @@ let package = Package(
     name: "CXLazyPage",
     platforms: [
         // Platforms define the platforms that this package supports.
-        .iOS(.v16), // Minimum iOS version
+        .iOS(.v17) // Minimum iOS version
     ],
     products: [
         // Products define the executables and libraries a package produces, making them visible to other packages.
         .library(
             name: "CXLazyPage",
             targets: ["CXLazyPage"]
-        ),
+        )
     ],
     targets: [
         // Targets are the basic building blocks of a package, defining a module or a test suite.
@@ -25,6 +25,6 @@ let package = Package(
         .testTarget(
             name: "CXLazyPageTests",
             dependencies: ["CXLazyPage"]
-        ),
+        )
     ]
 )

@@ -48,7 +48,7 @@ public struct CXLazyList<Content: View>: UIViewControllerRepresentable {
         _ uiViewController: CXLazyListViewController<Content>,
         context _: Context
     ) {
-        uiViewController.scrollToPageIndexIfNeeded(currentPage)
+//        uiViewController.scrollToPageIndexIfNeeded(currentPage)
     }
 
     // MARK: Private
