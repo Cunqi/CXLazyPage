@@ -22,7 +22,27 @@ public struct CXInfinityPage<Page: View>: View {
     // MARK: Public
 
     public var body: some View {
-        EmptyView()
+        makePageContainer { geometry in
+            ForEach(0 ..< InfinityPageCoordinator.maxPage) { index in
+                page(coordinator.makeIndex(offset: index))
+                    .frame(width: geometry.size.width, height: geometry.size.height)
+                    .background {
+                        GeometryReader { geometry in
+                            Color.clear
+                                .preference(
+                                    key: ScrollOffsetKey.self,
+                                    value: CXInfinityPage.makeScrollOffset(
+                                        frame: geometry.frame(in: .scrollView),
+                                        axis: coordinator.axis
+                                    )
+                                )
+                        }
+                    }
+                    .onPreferenceChange(ScrollOffsetKey.self) {
+                        coordinator.offset.send($0)
+                    }
+            }
+        }
     }
 
     // MARK: Private
@@ -30,6 +50,15 @@ public struct CXInfinityPage<Page: View>: View {
     @State private var coordinator: InfinityPageCoordinator
 
     private let page: (Int) -> Page
+
+    private static func makeScrollOffset(frame: CGRect, axis: Axis) -> CGFloat {
+        switch axis {
+        case .horizontal:
+            -frame.origin.x
+        case .vertical:
+            -frame.origin.y
+        }
+    }
 
     private func makePageContainer(@ViewBuilder container: @escaping (GeometryProxy) -> some View)
         -> some View {
