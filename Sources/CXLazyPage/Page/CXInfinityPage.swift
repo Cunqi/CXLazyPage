@@ -14,8 +14,13 @@ import SwiftUI
 public struct CXInfinityPage<Page: View>: View {
     // MARK: Lifecycle
 
-    public init(axis: Axis = .horizontal, @ViewBuilder page: @escaping (Int) -> Page) {
+    public init(
+        axis: Axis = .horizontal,
+        currentPage: Binding<Int> = .constant(.zero),
+        @ViewBuilder page: @escaping (Int) -> Page
+    ) {
         _coordinator = State(initialValue: InfinityPageCoordinator(axis: axis))
+        _currentPage = currentPage
         self.page = page
     }
 
@@ -43,7 +48,14 @@ public struct CXInfinityPage<Page: View>: View {
                     }
             }
         }
+        .onChange(of: coordinator.currentPage) { _, newValue in
+            currentPage = newValue
+        }
     }
+
+    // MARK: Internal
+
+    @Binding var currentPage: Int
 
     // MARK: Private
 
