@@ -51,6 +51,9 @@ public struct CXInfinityPage<Page: View>: View {
         .onChange(of: coordinator.currentPage) { _, newValue in
             currentPage = newValue
         }
+        .onChange(of: currentPage) { _, newValue in
+            coordinator.scroll(to: newValue)
+        }
     }
 
     // MARK: Internal
@@ -139,8 +142,11 @@ final class InfinityPageCoordinator {
     }
 
     func scroll(to index: Int) {
+        guard index != currentPage else {
+            return
+        }
         withAnimation {
-            self.index = index
+            self.index = pivot
             self.currentPage = index
         }
     }
