@@ -15,12 +15,14 @@ public struct CXInfinityPage<Page: View>: View {
     // MARK: Lifecycle
 
     public init(
-        axis: Axis = .horizontal,
-        currentPage: Binding<Int> = .constant(.zero),
+        axis: Axis,
+        currentPage: Binding<Int> = .constant(0),
+        scrollEnabled: Binding<Bool> = .constant(true),
         @ViewBuilder page: @escaping (Int) -> Page
     ) {
-        _coordinator = State(initialValue: InfinityPageCoordinator(axis: axis))
+        _controller = .init(initialValue: CXInfinityPageController(axis: axis))
         _currentPage = currentPage
+        _scrollEnabled = scrollEnabled
         self.page = page
     }
 
@@ -28,8 +30,8 @@ public struct CXInfinityPage<Page: View>: View {
 
     public var body: some View {
         makePageContainer { geometry in
-            ForEach(0 ..< InfinityPageCoordinator.maxPage) { index in
-                page(coordinator.makeIndex(offset: index))
+            ForEach(0 ..< CXInfinityPageController.maxPage) { index in
+                page(controller.makeIndex(offset: index))
                     .frame(width: geometry.size.width, height: geometry.size.height)
                     .background {
                         GeometryReader { geometry in
@@ -38,31 +40,34 @@ public struct CXInfinityPage<Page: View>: View {
                                     key: ScrollOffsetKey.self,
                                     value: CXInfinityPage.makeScrollOffset(
                                         frame: geometry.frame(in: .scrollView),
-                                        axis: coordinator.axis
+                                        axis: controller.axis
                                     )
                                 )
                         }
                     }
                     .onPreferenceChange(ScrollOffsetKey.self) {
-                        coordinator.offset.send($0)
+                        controller.offset.send($0)
                     }
             }
         }
-        .onChange(of: coordinator.currentPage) { _, newValue in
+        .onChange(of: controller.currentPage) { _, newValue in
             currentPage = newValue
         }
         .onChange(of: currentPage) { _, newValue in
-            coordinator.scroll(to: newValue)
+            controller.scroll(to: newValue)
         }
     }
 
     // MARK: Internal
 
+    static var rotationDegree: Double { 90 }
+
     @Binding var currentPage: Int
+    @Binding var scrollEnabled: Bool
 
     // MARK: Private
 
-    @State private var coordinator: InfinityPageCoordinator
+    @State private var controller: CXInfinityPageController
 
     private let page: (Int) -> Page
 
@@ -78,26 +83,28 @@ public struct CXInfinityPage<Page: View>: View {
     private func makePageContainer(@ViewBuilder container: @escaping (GeometryProxy) -> some View)
         -> some View {
         GeometryReader { geometry in
-            switch coordinator.axis {
+            switch controller.axis {
             case .horizontal:
-                TabView(selection: $coordinator.index) {
+                TabView(selection: $controller.index) {
                     container(geometry)
                         .contentShape(.rect)
+                        .gesture(scrollEnabled ? nil : DragGesture())
                 }
                 .frame(width: geometry.size.width, height: geometry.size.height)
                 .tabViewStyle(.page(indexDisplayMode: .never))
                 .coordinateSpace(.scrollView(axis: .horizontal))
 
             case .vertical:
-                TabView(selection: $coordinator.index) {
+                TabView(selection: $controller.index) {
                     container(geometry)
                         .frame(width: geometry.size.width, height: geometry.size.height)
-                        .rotationEffect(.degrees(-InfinityPageCoordinator.rotationDegree))
-                        .contentShape(Rectangle())
+                        .rotationEffect(.degrees(-CXInfinityPage.rotationDegree))
+                        .contentShape(.rect)
+                        .gesture(scrollEnabled ? nil : DragGesture())
                 }
                 .frame(width: geometry.size.height, height: geometry.size.width)
                 .rotationEffect(
-                    .degrees(InfinityPageCoordinator.rotationDegree),
+                    .degrees(CXInfinityPage.rotationDegree),
                     anchor: .topLeading
                 )
                 .offset(x: geometry.size.width)
@@ -105,70 +112,6 @@ public struct CXInfinityPage<Page: View>: View {
                 .coordinateSpace(.scrollView(axis: .vertical))
             }
         }
-    }
-}
-
-// MARK: - InfinityPageCoordinator
-
-@Observable
-final class InfinityPageCoordinator {
-    // MARK: Lifecycle
-
-    init(axis: Axis) {
-        self.axis = axis
-        offset = .init(.zero)
-
-        detect()
-    }
-
-    // MARK: Internal
-
-    // MARK: - Constants
-
-    static let maxPage = 50
-    static let rotationDegree: Double = 90
-
-    let axis: Axis
-    let offset: CurrentValueSubject<CGFloat, Never>
-
-    // MARK: - Page indexes
-
-    let pivot = maxPage / 2
-    var index: Int = maxPage / 2
-    var currentPage = 0
-
-    func makeIndex(offset: Int) -> Int {
-        currentPage + (offset - pivot)
-    }
-
-    func scroll(to index: Int) {
-        guard index != currentPage else {
-            return
-        }
-        withAnimation {
-            self.index = pivot
-            self.currentPage = index
-        }
-    }
-
-    // MARK: Private
-
-    private var cancelable = Set<AnyCancellable>()
-
-    private func detect() {
-        offset
-            .debounce(for: .seconds(0.2), scheduler: DispatchQueue.main)
-            .dropFirst()
-            .sink { [weak self] _ in
-                self?.detectOffsetChange()
-            }
-            .store(in: &cancelable)
-    }
-
-    private func detectOffsetChange() {
-        let indexOffset = index - pivot
-        currentPage += indexOffset
-        index = pivot
     }
 }
 
