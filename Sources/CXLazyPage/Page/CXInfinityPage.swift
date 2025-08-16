@@ -18,15 +18,20 @@ public struct CXInfinityPage<Page: View>: View {
         axis: Axis,
         currentPage: Binding<Int> = .constant(0),
         scrollEnabled: Binding<Bool> = .constant(true),
-        @ViewBuilder page: @escaping (Int) -> Page
+        pageWillChange: @escaping PageWillChange = { },
+        @ViewBuilder page: @escaping PageContent
     ) {
         _controller = .init(initialValue: CXInfinityPageController(axis: axis))
         _currentPage = currentPage
         _scrollEnabled = scrollEnabled
+        self.pageWillChange = pageWillChange
         self.page = page
     }
 
     // MARK: Public
+
+    public typealias PageWillChange = () -> Void
+    public typealias PageContent = (Int) -> Page
 
     public var body: some View {
         makePageContainer { geometry in
@@ -38,15 +43,21 @@ public struct CXInfinityPage<Page: View>: View {
                             Color.clear
                                 .preference(
                                     key: ScrollOffsetKey.self,
-                                    value: CXInfinityPage.makeScrollOffset(
+                                    value: ScrollOffset(index: index, offset: CXInfinityPage.makeScrollOffset(
                                         frame: geometry.frame(in: .scrollView),
                                         axis: controller.axis
-                                    )
+                                    ))
                                 )
                         }
                     }
-                    .onPreferenceChange(ScrollOffsetKey.self) {
-                        controller.offset.send($0)
+                    .onPreferenceChange(ScrollOffsetKey.self) { offset in
+                        guard offset.index == controller.index else {
+                            return
+                        }
+                        if offset.offset < 0, abs(offset.offset) > CXInfinityPage.threshold {
+                            pageWillChange()
+                        }
+                        controller.offset.send(offset.offset)
                     }
             }
         }
@@ -60,6 +71,7 @@ public struct CXInfinityPage<Page: View>: View {
 
     // MARK: Internal
 
+    static var threshold: CGFloat  { 80 }
     static var rotationDegree: Double { 90 }
 
     @Binding var currentPage: Int
@@ -69,7 +81,9 @@ public struct CXInfinityPage<Page: View>: View {
 
     @State private var controller: CXInfinityPageController
 
-    private let page: (Int) -> Page
+    private let page: PageContent
+
+    private let pageWillChange: PageWillChange
 
     private static func makeScrollOffset(frame: CGRect, axis: Axis) -> CGFloat {
         switch axis {
@@ -117,12 +131,28 @@ public struct CXInfinityPage<Page: View>: View {
 
 // MARK: - ScrollOffsetKey
 
+struct ScrollOffset: Equatable {
+    let index: Int
+    let offset: CGFloat
+
+    static var zero: ScrollOffset {
+        ScrollOffset(index: 0, offset: 0)
+    }
+}
+
 struct ScrollOffsetKey: PreferenceKey {
-    static var defaultValue: CGFloat {
+    static var defaultValue: ScrollOffset {
         .zero
     }
 
-    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
-        value += nextValue()
+    static func reduce(value: inout ScrollOffset, nextValue: () -> ScrollOffset) {
+        if value == .zero {
+            value = nextValue()
+        } else {
+            value = ScrollOffset(
+                index: value.index,
+                offset: value.offset + nextValue().offset
+            )
+        }
     }
 }
