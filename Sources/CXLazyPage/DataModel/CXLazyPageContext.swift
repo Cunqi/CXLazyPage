@@ -34,14 +34,6 @@ public struct CXLazyPageContext {
             return self
         }
 
-        /// Sets a fixed height for all items in the page.
-        /// - Parameter height: The height in points for each item, or nil for automatic sizing.
-        /// - Returns: The builder instance for method chaining.
-        public func itemHeight(_ height: CGFloat?) -> Self {
-            itemHeight = height
-            return self
-        }
-
         /// Sets the viewport tracking configuration.
         /// - Parameter context: The viewport tracker context to configure viewport detection behavior.
         /// - Returns: The builder instance for method chaining.
@@ -54,7 +46,6 @@ public struct CXLazyPageContext {
             CXLazyPageContext(
                 axis: axis,
                 isPagingEnabled: isPagingEnabled,
-                itemHeight: itemHeight,
                 viewportTrackerContext: viewportTrackerContext
             )
         }
@@ -74,9 +65,6 @@ public struct CXLazyPageContext {
 
     /// A Boolean value indicating whether paging is enabled.
     let isPagingEnabled: Bool
-
-    /// The height of each item in the page.
-    let itemHeight: CGFloat?
 
     // MARK: - Viewport
 

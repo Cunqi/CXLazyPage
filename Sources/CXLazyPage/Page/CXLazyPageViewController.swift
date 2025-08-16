@@ -78,8 +78,10 @@ public class CXLazyPageViewController<Content: View>: CXLazyBaseViewController,
         /// avoid calling `collectionView.sizeForItemAt` since it will pre-calculate the size of each item
         /// and we have `10_0000000` items, which will cause performance issues.
         if let layout = collectionView.collectionViewLayout as? UICollectionViewFlowLayout {
-            let itemHeight = context.itemHeight ?? collectionView.bounds.size.height
-            layout.itemSize = CGSize(width: collectionView.bounds.size.width, height: itemHeight)
+            layout.itemSize = CGSize(
+                width: collectionView.bounds.size.width,
+                height: collectionView.bounds.size.height
+            )
         }
     }
 

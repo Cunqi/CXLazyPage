@@ -16,11 +16,11 @@ public struct CXLazyList<Content: View>: UIViewControllerRepresentable {
         viewportTrackerContext: ViewportTrackerContext = .default,
         currentPage: Binding<Int> = .constant(.zero),
         @ViewBuilder content: @escaping (Int) -> Content,
-        heightOf: @escaping (Int) -> Int
+        heightOfPage: @escaping CXLazyListHeightOfPage
     ) {
         _currentPage = currentPage
         self.content = content
-        self.heightOf = heightOf
+        self.heightOfPage = heightOfPage
         context = CXLazyPageContext.Builder()
             .axis(.vertical)
             .pagingEnabled(false)
@@ -36,7 +36,7 @@ public struct CXLazyList<Content: View>: UIViewControllerRepresentable {
         CXLazyListViewController(
             context: context,
             content: content,
-            heightOf: heightOf
+            heightOfPage: heightOfPage
         ) { currentPage in
             DispatchQueue.main.async {
                 self.currentPage = currentPage
@@ -48,7 +48,7 @@ public struct CXLazyList<Content: View>: UIViewControllerRepresentable {
         _ uiViewController: CXLazyListViewController<Content>,
         context _: Context
     ) {
-//        uiViewController.scrollToPageIndexIfNeeded(currentPage)
+        uiViewController.scrollToPageIndexIfNeeded(currentPage)
     }
 
     // MARK: Private
@@ -57,7 +57,7 @@ public struct CXLazyList<Content: View>: UIViewControllerRepresentable {
 
     @ViewBuilder private var content: (Int) -> Content
 
-    private var heightOf: (Int) -> Int
+    private var heightOfPage: CXLazyListHeightOfPage
 
     private let context: CXLazyPageContext
 }

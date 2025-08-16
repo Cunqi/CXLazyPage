@@ -153,6 +153,9 @@ public class CXLazyBaseViewController: UIViewController {
             collectionView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
             collectionView.trailingAnchor.constraint(equalTo: view.trailingAnchor)
         ])
+
+        view.backgroundColor = .clear
+        collectionView.backgroundColor = .clear
     }
 }
 

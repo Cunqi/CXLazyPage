@@ -11,6 +11,8 @@ import UIKit
 
 // MARK: - CXLazyListViewController
 
+public typealias CXLazyListHeightOfPage = (Int, CGFloat) -> CGFloat
+
 public class CXLazyListViewController<Content: View>: CXLazyBaseViewController,
     UICollectionViewDelegateFlowLayout {
     // MARK: Lifecycle
@@ -21,16 +23,16 @@ public class CXLazyListViewController<Content: View>: CXLazyBaseViewController,
     /// - Parameters:
     ///   - context: The context that defines the configuration of the lazy page.
     ///   - content: A closure that provides the content for each page based on its index.
-    ///   - heightOf: A closure that provides the height for each page based on its index.
+    ///   - heightOfPage: A closure that provides the height for each page based on its index.
     ///   - onPageIndexUpdate: A closure that is called when the current page index is updated.
     public init(
         context: CXLazyPageContext,
         content: @escaping (Int) -> Content,
-        heightOf: @escaping (Int) -> Int,
+        heightOfPage: @escaping CXLazyListHeightOfPage,
         onPageIndexUpdate: @escaping (Int) -> Void
     ) {
         self.content = content
-        self.heightOf = heightOf
+        self.heightOfPage = heightOfPage
         super.init(context: context, onPageIndexUpdate: onPageIndexUpdate)
     }
 
@@ -55,8 +57,9 @@ public class CXLazyListViewController<Content: View>: CXLazyBaseViewController,
         layout _: UICollectionViewLayout,
         sizeForItemAt indexPath: IndexPath
     ) -> CGSize {
-        let itemHeight = heightOf(items[indexPath.item])
-        return CGSize(width: collectionView.bounds.width, height: CGFloat(itemHeight))
+        CGSize(
+            width: collectionView.bounds.width,
+            height: heightOfPage(items[indexPath.item], collectionView.bounds.width))
     }
 
     public override func scrollViewDidEndDecelerating(_: UIScrollView) {
@@ -152,7 +155,7 @@ public class CXLazyListViewController<Content: View>: CXLazyBaseViewController,
     private var content: (Int) -> Content
 
     /// The height of each page.
-    private var heightOf: (Int) -> Int
+    private var heightOfPage: CXLazyListHeightOfPage
 
     private lazy var viewportTracker = ViewportTracker(
         context: context.viewportTrackerContext,
